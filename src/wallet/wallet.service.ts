@@ -33,7 +33,7 @@ export class WalletService {
   }
 
   async addMoney(userId: string, amount: number) {
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       let wallet = await tx.wallet.findUnique({ where: { userId } });
       if (!wallet) {
         wallet = await tx.wallet.create({
@@ -66,7 +66,7 @@ export class WalletService {
   }
 
   async deductMoney(userId: string, amount: number) {
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const wallet = await tx.wallet.findUnique({ where: { userId } });
       if (!wallet || wallet.balance < amount) {
         throw new BadRequestException("Insufficient wallet balance");
@@ -143,7 +143,7 @@ export class WalletService {
       throw new NotFoundException("Worker profile not found");
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const wallet = await tx.wallet.findUnique({ where: { userId } });
       if (!wallet || wallet.balance < dto.amount) {
         throw new BadRequestException(
@@ -184,7 +184,7 @@ export class WalletService {
             upiId: worker.upiId,
           },
         },
-      });
+      } as any);
 
       return {
         success: true,
