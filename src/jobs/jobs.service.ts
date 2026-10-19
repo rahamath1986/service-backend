@@ -50,7 +50,7 @@ export class JobsService {
     const jobs = await this.prisma.booking.findMany({
       where: {
         workerId: worker.id,
-        status: { in: [BookingStatus.REQUESTED, BookingStatus.UPCOMING] },
+        status: { in: [BookingStatus.REQUESTED, BookingStatus.UPCOMING] } as any,
       },
       include: {
         user: {
@@ -87,7 +87,7 @@ export class JobsService {
             BookingStatus.IN_PROGRESS,
             BookingStatus.AWAITING_CONFIRMATION,
           ],
-        },
+        } as any,
       },
       include: {
         user: {
@@ -476,7 +476,7 @@ export class JobsService {
             BookingStatus.CANCELLED,
             BookingStatus.DECLINED,
           ],
-        },
+        } as any,
       },
       include: {
         user: {

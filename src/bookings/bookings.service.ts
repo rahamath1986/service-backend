@@ -100,7 +100,7 @@ export class BookingsService {
             id: `room_${bookingId}`,
           },
         },
-      },
+      } as any,
       include: {
         worker: true,
         user: {
