@@ -91,7 +91,7 @@ export class BookingsService {
         address: dto.address,
         note: dto.note,
         amount: dto.amount,
-        status: ((BookingStatus as any).REQUESTED || "REQUESTED") as BookingStatus,
+        status: BookingStatus.REQUESTED,
         paymentMethod: dto.paymentMethod || "UPI (Google Pay)",
         isPaid: false,
         startOtp,
@@ -100,7 +100,7 @@ export class BookingsService {
             id: `room_${bookingId}`,
           },
         },
-      } as any,
+      },
       include: {
         worker: true,
         user: {

@@ -1,5 +1,2 @@
-export enum KycStatus {
-  PENDING = "PENDING",
-  VERIFIED = "VERIFIED",
-  REJECTED = "REJECTED",
-}
+export { KycStatus } from "@prisma/client";
+
