@@ -16,8 +16,10 @@ COPY src ./src
 RUN npx prisma generate
 RUN npm run build
 
-# Remove development dependencies after build
-RUN npm prune --omit=dev
+# Remove development dependencies and unused engines after build
+RUN npm prune --omit=dev && \
+    rm -rf node_modules/prisma node_modules/typescript node_modules/@types node_modules/.prisma/client/*debian*
+
 
 
 # --------------------------------------------------
