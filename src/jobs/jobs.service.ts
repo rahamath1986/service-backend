@@ -191,7 +191,7 @@ export class JobsService {
         status: BookingStatus.DECLINED,
         declinedReason: dto.reason || "Worker declined",
       },
-    });
+    } as any);
 
     return {
       success: true,
@@ -291,7 +291,7 @@ export class JobsService {
           select: { id: true, name: true, phone: true, avatar: true },
         },
       },
-    });
+    } as any);
 
     return {
       success: true,
@@ -317,7 +317,7 @@ export class JobsService {
       data: {
         checklist: dto.checklist as any,
       },
-    });
+    } as any);
 
     return {
       success: true,
@@ -343,7 +343,7 @@ export class JobsService {
       data: {
         materials: dto.materials as any,
       },
-    });
+    } as any);
 
     return {
       success: true,
@@ -374,7 +374,7 @@ export class JobsService {
         additionalCost: dto.additionalCost,
         additionalCostReason: dto.reason,
       },
-    });
+    } as any);
 
     return {
       success: true,
@@ -423,7 +423,7 @@ export class JobsService {
           select: { id: true, name: true, phone: true },
         },
       },
-    });
+    } as any);
 
     // Credit worker's wallet
     const workerWallet = await this.prisma.wallet.upsert({

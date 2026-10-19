@@ -231,7 +231,7 @@ export class WorkerProfileService {
   async updateAvailability(userId: string, dto: UpdateAvailabilityDto) {
     const worker = await this.getOrCreateWorkerByUserId(userId);
 
-    const updated = await this.prisma.worker.update({
+    const updated: any = await this.prisma.worker.update({
       where: { id: worker.id },
       data: {
         workingArea: dto.workingArea ?? undefined,
@@ -241,7 +241,7 @@ export class WorkerProfileService {
         endTime: dto.endTime ?? undefined,
         isFullTime: dto.isFullTime ?? undefined,
       },
-    });
+    } as any);
 
     return {
       success: true,
@@ -263,12 +263,12 @@ export class WorkerProfileService {
     const nextState =
       dto && dto.isOnline !== undefined ? dto.isOnline : !worker.isOnline;
 
-    const updated = await this.prisma.worker.update({
+    const updated: any = await this.prisma.worker.update({
       where: { id: worker.id },
       data: {
         isOnline: nextState,
       },
-    });
+    } as any);
 
     return {
       success: true,
