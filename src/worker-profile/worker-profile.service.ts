@@ -26,7 +26,7 @@ export class WorkerProfileService {
           take: 10,
         },
       },
-    });
+    } as any);
 
     if (!worker) {
       const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -50,7 +50,7 @@ export class WorkerProfileService {
               take: 10,
             },
           },
-        });
+        } as any);
       } else {
         worker = await this.prisma.worker.create({
           data: {
@@ -71,7 +71,7 @@ export class WorkerProfileService {
               take: 10,
             },
           },
-        });
+        } as any);
       }
     }
 
@@ -132,7 +132,7 @@ export class WorkerProfileService {
       include: {
         kycDocuments: true,
       },
-    });
+    } as any);
 
     if (dto.name || dto.phone) {
       await this.prisma.user.update({

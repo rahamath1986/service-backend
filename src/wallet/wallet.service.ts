@@ -215,7 +215,7 @@ export class WalletService {
           orderBy: { createdAt: "desc" },
         },
       },
-    });
+    } as any);
 
     return {
       availableBalance: wallet?.balance ?? 0.0,
