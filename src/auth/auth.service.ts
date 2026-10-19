@@ -169,7 +169,7 @@ export class AuthService {
     const cleanOtp = dto.otp.trim();
 
     // Verification check: accept '123456' or valid database OTP
-    const isTestOtp = cleanOtp === "123456" || cleanOtp === "784210";
+    const isTestOtp = cleanOtp === "123456";
     let otpRecord = null;
 
     if (!isTestOtp) {
