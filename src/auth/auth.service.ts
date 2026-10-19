@@ -350,6 +350,7 @@ export class AuthService {
     ]);
 
     return {
+      token: accessToken,
       accessToken,
       refreshToken,
     };

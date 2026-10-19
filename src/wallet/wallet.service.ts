@@ -119,10 +119,16 @@ export class WalletService {
       pendingClearance = pendingPayouts.reduce((sum, p) => sum + p.amount, 0);
     }
 
+    const walletHistory = await this.getWalletHistory(userId);
+
     return {
       availableBalance: wallet?.balance ?? 0.0,
       balance: wallet?.balance ?? 0.0,
+      pendingBalance: Number(pendingClearance.toFixed(2)),
       pendingClearance: Number(pendingClearance.toFixed(2)),
+      history: walletHistory.history || [],
+      payouts: walletHistory.payouts || [],
+      transactions: walletHistory.transactions || [],
       bankAccount: {
         bankName: worker?.bankName || null,
         accountNumber: worker?.accountNumber || null,
@@ -217,8 +223,27 @@ export class WalletService {
       },
     } as any);
 
+    const historyList = [
+      ...(wallet?.transactions || []).map((t: any) => ({
+        ...t,
+        type: t.isCredit ? "CREDIT" : "DEBIT",
+        status: "COMPLETED",
+      })),
+      ...(worker?.payoutTransactions || []).map((p: any) => ({
+        ...p,
+        title: `Withdrawal (${p.method})`,
+        subtitle: `Ref: ${p.referenceId || p.id}`,
+        isCredit: false,
+        type: "DEBIT",
+      })),
+    ].sort(
+      (a: any, b: any) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+
     return {
       availableBalance: wallet?.balance ?? 0.0,
+      history: historyList,
       payouts: worker?.payoutTransactions ?? [],
       transactions: wallet?.transactions ?? [],
     };

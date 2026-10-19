@@ -143,4 +143,48 @@ export class SupportService {
       },
     };
   }
+
+  async getFaqs() {
+    const faqs = [
+      {
+        id: "faq_1",
+        category: "Jobs",
+        question: "How do I accept incoming job requests?",
+        answer:
+          "When a new job is dispatched, you will receive a notification and a lead timer. Tap Accept within 60 seconds to confirm the job.",
+      },
+      {
+        id: "faq_2",
+        category: "Jobs",
+        question: "What is the Start OTP?",
+        answer:
+          "Before starting any job at the customer location, ask the customer for their 4-digit start OTP and enter it in the app to begin work.",
+      },
+      {
+        id: "faq_3",
+        category: "Payments",
+        question: "How and when do I get paid?",
+        answer:
+          "After completing a job, 85% net earnings are immediately credited to your wallet. You can withdraw anytime to your registered bank account or UPI ID.",
+      },
+      {
+        id: "faq_4",
+        category: "KYC & Verification",
+        question: "How do I verify my KYC documents?",
+        answer:
+          "Go to Profile > KYC Documents, upload your Aadhaar Card and PAN Card. Our admin team verifies documents within 24-48 hours.",
+      },
+      {
+        id: "faq_5",
+        category: "Safety",
+        question: "What should I do in an emergency?",
+        answer:
+          "Tap the Emergency SOS button in the app. It immediately sends your live GPS coordinates to our safety dispatch team and alerts local emergency support.",
+      },
+    ];
+
+    return {
+      faqs,
+    };
+  }
 }

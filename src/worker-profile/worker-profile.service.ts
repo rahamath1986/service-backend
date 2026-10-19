@@ -170,13 +170,25 @@ export class WorkerProfileService {
   async getKyc(userId: string) {
     const worker = await this.getOrCreateWorkerByUserId(userId);
 
-    const documents = await this.prisma.kycDocument.findMany({
+    const documents: any[] = await this.prisma.kycDocument.findMany({
       where: { workerId: worker.id },
       orderBy: { createdAt: "desc" },
     });
 
     const isVerified = documents.some((d) => d.status === KycStatus.VERIFIED);
     const hasPending = documents.some((d) => d.status === KycStatus.PENDING);
+
+    const mappedDocuments = documents.map((d: any) => ({
+      ...d,
+      type: d.documentType,
+      title: d.documentType,
+      name: d.documentType,
+      documentType: d.documentType,
+      number: d.documentNumber,
+      documentNumber: d.documentNumber,
+      url: d.documentUrl,
+      documentUrl: d.documentUrl,
+    }));
 
     return {
       workerId: worker.id,
@@ -185,7 +197,16 @@ export class WorkerProfileService {
         : hasPending
           ? "PENDING"
           : "NOT_SUBMITTED",
-      documents,
+      documents: mappedDocuments,
+      kyc: {
+        workerId: worker.id,
+        status: isVerified
+          ? "VERIFIED"
+          : hasPending
+            ? "PENDING"
+            : "NOT_SUBMITTED",
+        documents: mappedDocuments,
+      },
     };
   }
 

@@ -22,6 +22,29 @@ type BookingStatus = any;
 export class JobsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  formatJobForWorker(b: any) {
+    if (!b) return null;
+    const customerObj = b.customer || b.user;
+    return {
+      ...b,
+      serviceTitle: b.serviceTitle || b.serviceName || "Home Service",
+      serviceName: b.serviceName || b.serviceTitle || "Home Service",
+      customerName: customerObj?.name || b.customerName || "Customer",
+      customerPhone: customerObj?.phone || b.customerPhone || "",
+      customerAvatar: customerObj?.avatar || b.customerAvatar || null,
+      customerAddress: b.address || customerObj?.address || "",
+      address: b.address || customerObj?.address || "",
+      issueDescription: b.issueDescription || b.note || "",
+      note: b.note || b.issueDescription || "",
+      customerOtp: b.customerOtp || b.startOtp || "1234",
+      startOtp: b.startOtp || b.customerOtp || "1234",
+      expiresAfterSeconds: b.expiresAfterSeconds || 60,
+      expiresInSeconds: b.expiresInSeconds || 60,
+      customer: customerObj,
+      user: customerObj,
+    };
+  }
+
   private async getWorkerByUserId(userId: string) {
     let worker = await this.prisma.worker.findUnique({
       where: { userId },
@@ -68,11 +91,10 @@ export class JobsService {
       orderBy: { createdAt: "desc" },
     });
 
-    return jobs.map((job: any) => ({
-      ...job,
-      expiresInSeconds: 60, // 60 seconds lead timer for worker UI
-      customer: job.user,
-    }));
+    const formatted = jobs.map((job: any) => this.formatJobForWorker(job));
+    return {
+      jobs: formatted,
+    };
   }
 
   async getActiveJob(userId: string) {
@@ -107,12 +129,13 @@ export class JobsService {
     });
 
     if (!activeJob) {
-      return null;
+      return { job: null };
     }
 
+    const formatted = this.formatJobForWorker(activeJob);
     return {
-      ...activeJob,
-      customer: activeJob.user,
+      job: formatted,
+      ...formatted,
     };
   }
 
@@ -138,9 +161,10 @@ export class JobsService {
       throw new NotFoundException(`Job with ID ${jobId} not found`);
     }
 
+    const formatted = this.formatJobForWorker(job);
     return {
-      ...job,
-      customer: job.user,
+      job: formatted,
+      ...formatted,
     };
   }
 
@@ -163,7 +187,7 @@ export class JobsService {
       },
       include: {
         user: {
-          select: { id: true, name: true, phone: true, avatar: true },
+          select: { id: true, name: true, phone: true, avatar: true, address: true },
         },
       },
     });
@@ -171,7 +195,7 @@ export class JobsService {
     return {
       success: true,
       message: "Job accepted successfully",
-      job: updated,
+      job: this.formatJobForWorker(updated),
     };
   }
 
@@ -193,12 +217,17 @@ export class JobsService {
         status: BookingStatus.DECLINED,
         declinedReason: dto.reason || "Worker declined",
       },
+      include: {
+        user: {
+          select: { id: true, name: true, phone: true, avatar: true, address: true },
+        },
+      },
     } as any);
 
     return {
       success: true,
       message: "Job rejected",
-      job: updated,
+      job: this.formatJobForWorker(updated),
     };
   }
 
@@ -221,7 +250,7 @@ export class JobsService {
       },
       include: {
         user: {
-          select: { id: true, name: true, phone: true, avatar: true },
+          select: { id: true, name: true, phone: true, avatar: true, address: true },
         },
       },
     });
@@ -229,7 +258,7 @@ export class JobsService {
     return {
       success: true,
       message: "Status updated to EN_ROUTE",
-      job: updated,
+      job: this.formatJobForWorker(updated),
     };
   }
 
@@ -252,7 +281,7 @@ export class JobsService {
       },
       include: {
         user: {
-          select: { id: true, name: true, phone: true, avatar: true },
+          select: { id: true, name: true, phone: true, avatar: true, address: true },
         },
       },
     });
@@ -260,7 +289,7 @@ export class JobsService {
     return {
       success: true,
       message: "Status updated to ARRIVED",
-      job: updated,
+      job: this.formatJobForWorker(updated),
     };
   }
 
@@ -290,7 +319,7 @@ export class JobsService {
       },
       include: {
         user: {
-          select: { id: true, name: true, phone: true, avatar: true },
+          select: { id: true, name: true, phone: true, avatar: true, address: true },
         },
       },
     } as any);
@@ -298,7 +327,7 @@ export class JobsService {
     return {
       success: true,
       message: "OTP verified. Job started successfully",
-      job: updated,
+      job: this.formatJobForWorker(updated),
     };
   }
 
@@ -319,16 +348,22 @@ export class JobsService {
       data: {
         checklist: dto.checklist as any,
       },
+      include: {
+        user: {
+          select: { id: true, name: true, phone: true, avatar: true, address: true },
+        },
+      },
     } as any);
 
     return {
       success: true,
       message: "Checklist updated successfully",
+      job: this.formatJobForWorker(updated),
       checklist: updated.checklist,
     };
   }
 
-  async updateMaterials(jobId: string, userId: string, dto: MaterialsJobDto) {
+  async toggleChecklist(jobId: string, userId: string, body: any) {
     const worker = await this.getWorkerByUserId(userId);
     const job: any = await this.prisma.booking.findUnique({ where: { id: jobId } });
 
@@ -340,16 +375,112 @@ export class JobsService {
       throw new ForbiddenException("You are not assigned to this job");
     }
 
+    const checklistId = body?.checklistId || body?.id;
+    const isCompleted = body?.isCompleted !== undefined ? Boolean(body.isCompleted) : true;
+
+    let existingChecklist: any[] = [];
+    if (Array.isArray(job.checklist)) {
+      existingChecklist = [...(job.checklist as any[])];
+    }
+
+    const itemIndex = existingChecklist.findIndex(
+      (item: any) => item.id === checklistId || item.checklistId === checklistId,
+    );
+
+    if (itemIndex >= 0) {
+      existingChecklist[itemIndex] = {
+        ...existingChecklist[itemIndex],
+        isCompleted,
+      };
+    } else if (checklistId) {
+      existingChecklist.push({
+        id: checklistId,
+        checklistId,
+        task: body?.task || `Step ${checklistId}`,
+        isCompleted,
+      });
+    }
+
     const updated: any = await this.prisma.booking.update({
       where: { id: jobId },
       data: {
-        materials: dto.materials as any,
+        checklist: existingChecklist as any,
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, phone: true, avatar: true, address: true },
+        },
+      },
+    } as any);
+
+    return {
+      success: true,
+      message: "Checklist updated successfully",
+      job: this.formatJobForWorker(updated),
+      checklist: updated.checklist,
+    };
+  }
+
+  async updateMaterials(jobId: string, userId: string, dto: any) {
+    const worker = await this.getWorkerByUserId(userId);
+    const job: any = await this.prisma.booking.findUnique({ where: { id: jobId } });
+
+    if (!job) {
+      throw new NotFoundException(`Job with ID ${jobId} not found`);
+    }
+
+    if (job.workerId !== worker.id) {
+      throw new ForbiddenException("You are not assigned to this job");
+    }
+
+    let existingMaterials: any[] = [];
+    if (Array.isArray(job.materials)) {
+      existingMaterials = [...(job.materials as any[])];
+    }
+
+    let newMaterialsList: any[] = [];
+    if (dto && Array.isArray(dto.materials)) {
+      newMaterialsList = dto.materials;
+    } else if (
+      dto &&
+      (dto.name || dto.item || dto.cost !== undefined || dto.price !== undefined)
+    ) {
+      // Single material item object sent from Flutter app
+      const singleItem = {
+        id: dto.id || `mat_${Date.now()}`,
+        name: dto.name || dto.item || "Material / Spare Part",
+        quantity: Number(dto.quantity || 1),
+        cost: Number(dto.cost || dto.price || 0),
+      };
+      const existingIdx = existingMaterials.findIndex(
+        (m) => m.id === singleItem.id,
+      );
+      if (existingIdx >= 0) {
+        existingMaterials[existingIdx] = singleItem;
+      } else {
+        existingMaterials.push(singleItem);
+      }
+      newMaterialsList = existingMaterials;
+    } else {
+      newMaterialsList = existingMaterials;
+    }
+
+    const updated: any = await this.prisma.booking.update({
+      where: { id: jobId },
+      data: {
+        materials: newMaterialsList as any,
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, phone: true, avatar: true, address: true },
+        },
       },
     } as any);
 
     return {
       success: true,
       message: "Materials / spare parts updated successfully",
+      job: this.formatJobForWorker(updated),
       materials: updated.materials,
     };
   }
@@ -376,11 +507,17 @@ export class JobsService {
         additionalCost: dto.additionalCost,
         additionalCostReason: dto.reason,
       },
+      include: {
+        user: {
+          select: { id: true, name: true, phone: true, avatar: true, address: true },
+        },
+      },
     } as any);
 
     return {
       success: true,
       message: "Additional charges submitted successfully",
+      job: this.formatJobForWorker(updated),
       additionalCost: updated.additionalCost,
       reason: updated.additionalCostReason,
     };
@@ -422,7 +559,7 @@ export class JobsService {
       },
       include: {
         user: {
-          select: { id: true, name: true, phone: true },
+          select: { id: true, name: true, phone: true, avatar: true, address: true },
         },
       },
     } as any);
@@ -449,20 +586,16 @@ export class JobsService {
         date: new Date().toLocaleDateString("en-GB"),
         isCredit: true,
       },
-    });
+    } as any);
 
     return {
       success: true,
-      message: "Job completed successfully and earnings credited to wallet",
-      job: updated,
-      summary: {
-        baseAmount: job.amount,
-        additionalCost: job.additionalCost,
-        materialsTotal,
-        grossAmount,
-        commission,
-        netWorkerEarnings,
-      },
+      message: "Job completed and earnings credited",
+      job: this.formatJobForWorker(updated),
+      netWorkerEarnings,
+      commission,
+      grossAmount,
+      walletBalance: workerWallet.balance + netWorkerEarnings,
     };
   }
 
@@ -494,10 +627,10 @@ export class JobsService {
       orderBy: { updatedAt: "desc" },
     });
 
-    return history.map((item: any) => ({
-      ...item,
-      customer: item.user,
-    }));
+    const formatted = history.map((item: any) => this.formatJobForWorker(item));
+    return {
+      jobs: formatted,
+    };
   }
 
   async reportIssue(jobId: string, userId: string, dto: ReportIssueDto) {

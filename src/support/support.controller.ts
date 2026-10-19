@@ -41,4 +41,10 @@ export class SupportController {
   async emergencyAlert(@Request() req: any, @Body() dto: EmergencyAlertDto) {
     return this.supportService.triggerEmergencyAlert(req.user.userId, dto);
   }
+
+  @ApiOperation({ summary: "Get Support & Safety FAQs for Worker App" })
+  @Get("faqs")
+  async getFaqs() {
+    return this.supportService.getFaqs();
+  }
 }

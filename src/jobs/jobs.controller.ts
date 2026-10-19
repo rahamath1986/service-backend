@@ -109,13 +109,24 @@ export class JobsController {
     return this.jobsService.updateProgress(id, req.user.userId, dto);
   }
 
+  @ApiOperation({ summary: "Toggle checklist item status (Worker App alias)" })
+  @Post(":id/checklist")
+  @HttpCode(HttpStatus.OK)
+  async toggleChecklist(
+    @Request() req: any,
+    @Param("id") id: string,
+    @Body() body: any,
+  ) {
+    return this.jobsService.toggleChecklist(id, req.user.userId, body);
+  }
+
   @ApiOperation({ summary: "Update spare parts / materials billing" })
   @Post(":id/materials")
   @HttpCode(HttpStatus.OK)
   async updateMaterials(
     @Request() req: any,
     @Param("id") id: string,
-    @Body() dto: MaterialsJobDto,
+    @Body() dto: any,
   ) {
     return this.jobsService.updateMaterials(id, req.user.userId, dto);
   }

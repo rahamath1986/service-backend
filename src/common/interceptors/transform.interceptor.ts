@@ -35,8 +35,13 @@ export class TransformInterceptor<T> implements NestInterceptor<
         ) {
           return data;
         }
+
+        const isPlainObject =
+          data && typeof data === "object" && !Array.isArray(data);
+
         return {
           success: true,
+          ...(isPlainObject ? data : {}),
           data,
           statusCode,
         };

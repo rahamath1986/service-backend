@@ -97,7 +97,20 @@ export class EarningsService {
       0,
     );
 
-    return {
+    const records = completedBookings.slice(0, 30).map((b: any) => ({
+      id: b.id,
+      bookingId: b.id,
+      jobId: b.id,
+      serviceTitle: b.serviceName,
+      serviceName: b.serviceName,
+      amount: b.amount,
+      netAmount: Number((b.amount * 0.85).toFixed(2)),
+      date: b.date || new Date(b.createdAt).toLocaleDateString(),
+      createdAt: b.createdAt,
+      status: b.status,
+    }));
+
+    const summaryObj = {
       workerId: worker.id,
       totalCompletedJobs: completedBookings.length,
       grossEarnings: Number(grossEarnings.toFixed(2)),
@@ -110,6 +123,13 @@ export class EarningsService {
       thisWeekEarnings: Number(thisWeekEarnings.toFixed(2)),
       thisMonthEarnings: Number(thisMonthEarnings.toFixed(2)),
       currency: "INR",
+    };
+
+    return {
+      ...summaryObj,
+      summary: summaryObj,
+      records,
+      recentEarnings: records,
     };
   }
 
