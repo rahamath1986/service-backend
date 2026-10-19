@@ -5,7 +5,9 @@ import {
   UpdateBookingStatusDto,
   PayBookingDto,
 } from "./dto/booking.dto";
-import { BookingStatus } from "../common/enums/booking-status.enum";
+import { BookingStatus as BookingStatusEnum } from "../common/enums/booking-status.enum";
+const BookingStatus: any = BookingStatusEnum;
+type BookingStatus = any;
 import { AppGateway } from "../gateway/app.gateway";
 
 @Injectable()

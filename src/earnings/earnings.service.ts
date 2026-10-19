@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { BookingStatus } from "../common/enums/booking-status.enum";
+import { BookingStatus as BookingStatusEnum } from "../common/enums/booking-status.enum";
+const BookingStatus: any = BookingStatusEnum;
+type BookingStatus = any;
 
 @Injectable()
 export class EarningsService {
