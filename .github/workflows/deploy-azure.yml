@@ -1,0 +1,42 @@
+name: Trigger auto deployment for service-backend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**'
+      - '!*.md'
+
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to Azure Container Registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}
+          dockerfilePath: Dockerfile
+          registryUrl: ${{ secrets.AZURE_REGISTRY_URL }}
+          registryUsername: ${{ secrets.AZURE_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+          containerAppName: servigo-backend
+          resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          imageToBuild: ${{ secrets.AZURE_REGISTRY_URL }}/servigo-backend:${{ github.sha }}
+          targetPort: 8080

@@ -1,0 +1,332 @@
+// Prisma schema for ServiGo Home Services Platform
+// Targets Azure PostgreSQL Flexible Server: service_db
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  WORKER
+  ADMIN
+}
+
+enum BookingStatus {
+  REQUESTED
+  ACCEPTED
+  EN_ROUTE
+  ARRIVED
+  IN_PROGRESS
+  AWAITING_CONFIRMATION
+  COMPLETED
+  DECLINED
+  CANCELLED
+  UPCOMING
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+}
+
+enum KycStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  EMERGENCY
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  phone        String        @unique
+  email        String        @unique
+  passwordHash String
+  avatar       String?
+  address      String?
+  role         Role          @default(CUSTOMER)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  bookings     Booking[]
+  wallet       Wallet?
+  sentMessages ChatMessage[] @relation("SentMessages")
+  reviews      Review[]
+  worker       Worker?
+
+  @@map("users")
+}
+
+model Worker {
+  id              String        @id @default(uuid())
+  userId          String?       @unique
+  name            String
+  profession      String
+  experienceYears Int           @default(1)
+  hourlyRate      Float
+  distanceKm      Float         @default(1.0)
+  rating          Float         @default(5.0)
+  reviewsCount    Int           @default(0)
+  isVerified      Boolean       @default(true)
+  about           String
+  avatarUrl       String?
+  phone           String
+  serviceId       String?
+
+  // Worker App Additions
+  isOnline        Boolean       @default(false)
+  workingArea     String?
+  serviceRadiusKm Float         @default(10.0)
+  workingDays     String[]      @default(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
+  startTime       String        @default("09:00")
+  endTime         String        @default("18:00")
+  isFullTime      Boolean       @default(true)
+  bankName        String?
+  accountNumber   String?
+  ifscCode        String?
+  upiId           String?
+  currentLatitude Float?
+  currentLongitude Float?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  service         Service?      @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  bookings        Booking[]
+  reviews         Review[]
+  kycDocuments    KycDocument[]
+  payoutTransactions PayoutTransaction[]
+
+  @@map("workers")
+}
+
+model Service {
+  id             String        @id @default(uuid())
+  name           String        @unique
+  description    String
+  basePrice      Float
+  rating         Float         @default(5.0)
+  reviewsCount   Int           @default(0)
+  icon           String        @default("build")
+  tintColor      String        @default("#00A86B")
+  bannerImage    String?
+  isFeatured     Boolean       @default(false)
+  availableSlots String[]      @default(["9:00 AM", "11:00 AM", "1:00 PM", "3:00 PM", "5:00 PM"])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  workers        Worker[]
+
+  @@map("services")
+}
+
+model Booking {
+  id                   String        @id @default(uuid())
+  userId               String
+  workerId             String
+  serviceName          String
+  date                 String
+  time                 String
+  address              String
+  note                 String?
+  amount               Float
+  status               BookingStatus @default(REQUESTED)
+  paymentMethod        String        @default("UPI (Google Pay)")
+  isPaid               Boolean       @default(false)
+
+  // Worker App Lifecycle Fields
+  startOtp             String?       @default("1234")
+  beforePhotos         String[]      @default([])
+  afterPhotos          String[]      @default([])
+  customerSignature    String?
+  additionalCost       Float         @default(0.0)
+  additionalCostReason String?
+  checklist            Json?
+  materials            Json?
+  declinedReason       String?
+
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  worker               Worker        @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  chatRoom             ChatRoom?
+
+  @@map("bookings")
+}
+
+model Wallet {
+  id           String              @id @default(uuid())
+  userId       String              @unique
+  balance      Float               @default(0.0)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id        String   @id @default(uuid())
+  walletId  String
+  title     String
+  subtitle  String
+  amount    Float
+  date      String
+  isCredit  Boolean
+  createdAt DateTime @default(now())
+
+  wallet    Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("wallet_transactions")
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  userId     String
+  workerId   String
+  userName   String
+  userAvatar String?
+  rating     Float    @default(5.0)
+  date       String
+  comment    String
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  worker     Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
+}
+
+model ChatRoom {
+  id        String        @id @default(uuid())
+  bookingId String        @unique
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  booking   Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  messages  ChatMessage[]
+
+  @@map("chat_rooms")
+}
+
+model ChatMessage {
+  id         String      @id @default(uuid())
+  roomId     String
+  senderId   String
+  text       String
+  time       String
+  isMe       Boolean     @default(false)
+  type       MessageType @default(TEXT)
+  imageUrl   String?
+  createdAt  DateTime    @default(now())
+
+  room       ChatRoom    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender     User        @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+model KycDocument {
+  id              String    @id @default(uuid())
+  workerId        String
+  documentType    String    // AADHAAR, PAN, DRIVING_LICENSE, CERTIFICATE
+  documentNumber  String?
+  documentUrl     String
+  status          KycStatus @default(PENDING)
+  rejectionReason String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  worker          Worker    @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@map("kyc_documents")
+}
+
+model PayoutTransaction {
+  id             String       @id @default(uuid())
+  workerId       String
+  amount         Float
+  status         PayoutStatus @default(PENDING)
+  payoutMethod   String       // BANK, UPI
+  accountDetails Json?
+  referenceId    String?
+  processedAt    DateTime?
+  failureReason  String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  worker         Worker       @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@map("payout_transactions")
+}
+
+model SupportTicket {
+  id          String         @id @default(uuid())
+  userId      String?
+  workerId    String?
+  bookingId   String?
+  subject     String
+  description String
+  status      TicketStatus   @default(OPEN)
+  priority    TicketPriority @default(MEDIUM)
+  category    String?        // JOB, PAYMENT, SAFETY, EMERGENCY, GENERAL
+  metadata    Json?          // location for SOS, coordinates, photos
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("support_tickets")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String?
+  workerId  String?
+  title     String
+  message   String
+  type      String   @default("GENERAL") // JOB_REQUEST, STATUS_UPDATE, PAYMENT, EMERGENCY, GENERAL
+  data      Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notifications")
+}
+
+model OtpVerification {
+  id        String   @id @default(uuid())
+  phone     String
+  otp       String
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("otp_verifications")
+}
