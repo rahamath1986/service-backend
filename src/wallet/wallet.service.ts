@@ -102,7 +102,7 @@ export class WalletService {
       where: { userId },
     });
 
-    const worker = await this.prisma.worker.findFirst({
+    const worker: any = await this.prisma.worker.findFirst({
       where: {
         OR: [{ userId }, { user: { id: userId } }],
       },
@@ -133,7 +133,7 @@ export class WalletService {
   }
 
   async withdraw(userId: string, dto: WorkerWithdrawDto) {
-    const worker = await this.prisma.worker.findFirst({
+    const worker: any = await this.prisma.worker.findFirst({
       where: {
         OR: [{ userId }, { user: { id: userId } }],
       },
@@ -206,7 +206,7 @@ export class WalletService {
       },
     });
 
-    const worker = await this.prisma.worker.findFirst({
+    const worker: any = await this.prisma.worker.findFirst({
       where: {
         OR: [{ userId }, { user: { id: userId } }],
       },

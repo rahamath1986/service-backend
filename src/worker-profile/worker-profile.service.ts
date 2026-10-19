@@ -17,7 +17,7 @@ export class WorkerProfileService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getOrCreateWorkerByUserId(userId: string) {
-    let worker = await this.prisma.worker.findUnique({
+    let worker: any = await this.prisma.worker.findUnique({
       where: { userId },
       include: {
         kycDocuments: true,
