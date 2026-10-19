@@ -49,7 +49,7 @@ export class JobsService {
   async getIncomingJobs(userId: string) {
     const worker = await this.getWorkerByUserId(userId);
 
-    const jobs = await this.prisma.booking.findMany({
+    const jobs: any = await this.prisma.booking.findMany({
       where: {
         workerId: worker.id,
         status: { in: [BookingStatus.REQUESTED, BookingStatus.UPCOMING] } as any,
@@ -68,7 +68,7 @@ export class JobsService {
       orderBy: { createdAt: "desc" },
     });
 
-    return jobs.map((job) => ({
+    return jobs.map((job: any) => ({
       ...job,
       expiresInSeconds: 60, // 60 seconds lead timer for worker UI
       customer: job.user,
@@ -78,7 +78,7 @@ export class JobsService {
   async getActiveJob(userId: string) {
     const worker = await this.getWorkerByUserId(userId);
 
-    const activeJob = await this.prisma.booking.findFirst({
+    const activeJob: any = await this.prisma.booking.findFirst({
       where: {
         workerId: worker.id,
         status: {
@@ -117,7 +117,7 @@ export class JobsService {
   }
 
   async getJobById(jobId: string, userId?: string) {
-    const job = await this.prisma.booking.findUnique({
+    const job: any = await this.prisma.booking.findUnique({
       where: { id: jobId },
       include: {
         user: {
@@ -146,7 +146,7 @@ export class JobsService {
 
   async acceptJob(jobId: string, userId: string) {
     const worker = await this.getWorkerByUserId(userId);
-    const job = await this.prisma.booking.findUnique({ where: { id: jobId } });
+    const job: any = await this.prisma.booking.findUnique({ where: { id: jobId } });
 
     if (!job) {
       throw new NotFoundException(`Job with ID ${jobId} not found`);
@@ -156,7 +156,7 @@ export class JobsService {
       throw new ForbiddenException("You are not assigned to this job");
     }
 
-    const updated = await this.prisma.booking.update({
+    const updated: any = await this.prisma.booking.update({
       where: { id: jobId },
       data: {
         status: BookingStatus.ACCEPTED,
@@ -177,7 +177,7 @@ export class JobsService {
 
   async rejectJob(jobId: string, userId: string, dto: RejectJobDto) {
     const worker = await this.getWorkerByUserId(userId);
-    const job = await this.prisma.booking.findUnique({ where: { id: jobId } });
+    const job: any = await this.prisma.booking.findUnique({ where: { id: jobId } });
 
     if (!job) {
       throw new NotFoundException(`Job with ID ${jobId} not found`);
@@ -187,7 +187,7 @@ export class JobsService {
       throw new ForbiddenException("You are not assigned to this job");
     }
 
-    const updated = await this.prisma.booking.update({
+    const updated: any = await this.prisma.booking.update({
       where: { id: jobId },
       data: {
         status: BookingStatus.DECLINED,
@@ -204,7 +204,7 @@ export class JobsService {
 
   async markEnRoute(jobId: string, userId: string) {
     const worker = await this.getWorkerByUserId(userId);
-    const job = await this.prisma.booking.findUnique({ where: { id: jobId } });
+    const job: any = await this.prisma.booking.findUnique({ where: { id: jobId } });
 
     if (!job) {
       throw new NotFoundException(`Job with ID ${jobId} not found`);
@@ -214,7 +214,7 @@ export class JobsService {
       throw new ForbiddenException("You are not assigned to this job");
     }
 
-    const updated = await this.prisma.booking.update({
+    const updated: any = await this.prisma.booking.update({
       where: { id: jobId },
       data: {
         status: BookingStatus.EN_ROUTE,
@@ -235,7 +235,7 @@ export class JobsService {
 
   async markArrived(jobId: string, userId: string) {
     const worker = await this.getWorkerByUserId(userId);
-    const job = await this.prisma.booking.findUnique({ where: { id: jobId } });
+    const job: any = await this.prisma.booking.findUnique({ where: { id: jobId } });
 
     if (!job) {
       throw new NotFoundException(`Job with ID ${jobId} not found`);
@@ -245,7 +245,7 @@ export class JobsService {
       throw new ForbiddenException("You are not assigned to this job");
     }
 
-    const updated = await this.prisma.booking.update({
+    const updated: any = await this.prisma.booking.update({
       where: { id: jobId },
       data: {
         status: BookingStatus.ARRIVED,
@@ -266,7 +266,7 @@ export class JobsService {
 
   async startJob(jobId: string, userId: string, dto: StartJobDto) {
     const worker = await this.getWorkerByUserId(userId);
-    const job = await this.prisma.booking.findUnique({ where: { id: jobId } });
+    const job: any = await this.prisma.booking.findUnique({ where: { id: jobId } });
 
     if (!job) {
       throw new NotFoundException(`Job with ID ${jobId} not found`);
@@ -282,7 +282,7 @@ export class JobsService {
       throw new BadRequestException("Invalid start OTP entered by customer");
     }
 
-    const updated = await this.prisma.booking.update({
+    const updated: any = await this.prisma.booking.update({
       where: { id: jobId },
       data: {
         status: BookingStatus.IN_PROGRESS,
@@ -304,7 +304,7 @@ export class JobsService {
 
   async updateProgress(jobId: string, userId: string, dto: ProgressJobDto) {
     const worker = await this.getWorkerByUserId(userId);
-    const job = await this.prisma.booking.findUnique({ where: { id: jobId } });
+    const job: any = await this.prisma.booking.findUnique({ where: { id: jobId } });
 
     if (!job) {
       throw new NotFoundException(`Job with ID ${jobId} not found`);
@@ -314,7 +314,7 @@ export class JobsService {
       throw new ForbiddenException("You are not assigned to this job");
     }
 
-    const updated = await this.prisma.booking.update({
+    const updated: any = await this.prisma.booking.update({
       where: { id: jobId },
       data: {
         checklist: dto.checklist as any,
@@ -330,7 +330,7 @@ export class JobsService {
 
   async updateMaterials(jobId: string, userId: string, dto: MaterialsJobDto) {
     const worker = await this.getWorkerByUserId(userId);
-    const job = await this.prisma.booking.findUnique({ where: { id: jobId } });
+    const job: any = await this.prisma.booking.findUnique({ where: { id: jobId } });
 
     if (!job) {
       throw new NotFoundException(`Job with ID ${jobId} not found`);
@@ -340,7 +340,7 @@ export class JobsService {
       throw new ForbiddenException("You are not assigned to this job");
     }
 
-    const updated = await this.prisma.booking.update({
+    const updated: any = await this.prisma.booking.update({
       where: { id: jobId },
       data: {
         materials: dto.materials as any,
@@ -360,7 +360,7 @@ export class JobsService {
     dto: AdditionalCostDto,
   ) {
     const worker = await this.getWorkerByUserId(userId);
-    const job = await this.prisma.booking.findUnique({ where: { id: jobId } });
+    const job: any = await this.prisma.booking.findUnique({ where: { id: jobId } });
 
     if (!job) {
       throw new NotFoundException(`Job with ID ${jobId} not found`);
@@ -370,7 +370,7 @@ export class JobsService {
       throw new ForbiddenException("You are not assigned to this job");
     }
 
-    const updated = await this.prisma.booking.update({
+    const updated: any = await this.prisma.booking.update({
       where: { id: jobId },
       data: {
         additionalCost: dto.additionalCost,
@@ -388,7 +388,7 @@ export class JobsService {
 
   async completeJob(jobId: string, userId: string, dto: CompleteJobDto) {
     const worker = await this.getWorkerByUserId(userId);
-    const job = await this.prisma.booking.findUnique({ where: { id: jobId } });
+    const job: any = await this.prisma.booking.findUnique({ where: { id: jobId } });
 
     if (!job) {
       throw new NotFoundException(`Job with ID ${jobId} not found`);
@@ -411,7 +411,7 @@ export class JobsService {
     const commission = grossAmount * 0.15; // 15% platform commission
     const netWorkerEarnings = grossAmount - commission;
 
-    const updated = await this.prisma.booking.update({
+    const updated: any = await this.prisma.booking.update({
       where: { id: jobId },
       data: {
         status: BookingStatus.COMPLETED,
@@ -469,7 +469,7 @@ export class JobsService {
   async getJobHistory(userId: string) {
     const worker = await this.getWorkerByUserId(userId);
 
-    const history = await this.prisma.booking.findMany({
+    const history: any = await this.prisma.booking.findMany({
       where: {
         workerId: worker.id,
         status: {
@@ -494,7 +494,7 @@ export class JobsService {
       orderBy: { updatedAt: "desc" },
     });
 
-    return history.map((item) => ({
+    return history.map((item: any) => ({
       ...item,
       customer: item.user,
     }));
@@ -502,7 +502,7 @@ export class JobsService {
 
   async reportIssue(jobId: string, userId: string, dto: ReportIssueDto) {
     const worker = await this.getWorkerByUserId(userId);
-    const job = await this.prisma.booking.findUnique({ where: { id: jobId } });
+    const job: any = await this.prisma.booking.findUnique({ where: { id: jobId } });
 
     if (!job) {
       throw new NotFoundException(`Job with ID ${jobId} not found`);

@@ -30,7 +30,7 @@ export class EarningsService {
   async getSummary(userId: string) {
     const worker = await this.getWorkerByUserId(userId);
 
-    const completedBookings = await this.prisma.booking.findMany({
+    const completedBookings: any = await this.prisma.booking.findMany({
       where: {
         workerId: worker.id,
         status: BookingStatus.COMPLETED,
@@ -116,7 +116,7 @@ export class EarningsService {
   async getBreakdown(userId: string, period = "weekly") {
     const worker = await this.getWorkerByUserId(userId);
 
-    const completedBookings = await this.prisma.booking.findMany({
+    const completedBookings: any = await this.prisma.booking.findMany({
       where: {
         workerId: worker.id,
         status: BookingStatus.COMPLETED,

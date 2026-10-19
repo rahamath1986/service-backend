@@ -36,7 +36,7 @@ export class BookingsService {
   }
 
   async getBookingById(id: string, userId?: string) {
-    const booking = await this.prisma.booking.findUnique({
+    const booking: any = await this.prisma.booking.findUnique({
       where: { id },
       include: {
         worker: true,
@@ -82,7 +82,7 @@ export class BookingsService {
     const bookingId = `SG${Date.now()}`;
     const startOtp = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit OTP
 
-    const booking = await this.prisma.booking.create({
+    const booking: any = await this.prisma.booking.create({
       data: {
         id: bookingId,
         userId,
@@ -132,7 +132,7 @@ export class BookingsService {
   }
 
   async updateBookingStatus(id: string, dto: UpdateBookingStatusDto) {
-    const booking = await this.prisma.booking.findUnique({ where: { id } });
+    const booking: any = await this.prisma.booking.findUnique({ where: { id } });
     if (!booking) {
       throw new NotFoundException(`Booking with ID ${id} not found`);
     }
@@ -145,11 +145,11 @@ export class BookingsService {
       include: {
         worker: true,
       },
-    });
+    } as any);
   }
 
   async markAsPaid(id: string, dto: PayBookingDto) {
-    const booking = await this.prisma.booking.findUnique({ where: { id } });
+    const booking: any = await this.prisma.booking.findUnique({ where: { id } });
     if (!booking) {
       throw new NotFoundException(`Booking with ID ${id} not found`);
     }
@@ -163,6 +163,6 @@ export class BookingsService {
       include: {
         worker: true,
       },
-    });
+    } as any);
   }
 }
