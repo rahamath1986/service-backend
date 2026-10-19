@@ -14,19 +14,21 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 
 @ApiTags("Support & Safety")
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("support")
 export class SupportController {
   constructor(private readonly supportService: SupportService) {}
 
   @ApiOperation({ summary: "Get worker/user support tickets" })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @Get("tickets")
   async getTickets(@Request() req: any) {
     return this.supportService.getTickets(req.user.userId);
   }
 
   @ApiOperation({ summary: "Create a support ticket" })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @Post("tickets")
   async createTicket(@Request() req: any, @Body() dto: CreateTicketDto) {
     return this.supportService.createTicket(req.user.userId, dto);
@@ -36,6 +38,8 @@ export class SupportController {
     summary:
       "Emergency SOS Alert - Broadcasts GPS coordinates during safety incidents",
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @Post("emergency-alert")
   @HttpCode(HttpStatus.OK)
   async emergencyAlert(@Request() req: any, @Body() dto: EmergencyAlertDto) {
