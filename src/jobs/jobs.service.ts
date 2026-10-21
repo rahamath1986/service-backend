@@ -38,6 +38,9 @@ export class JobsService {
       note: b.note || b.issueDescription || "",
       customerOtp: b.customerOtp || b.startOtp || "1234",
       startOtp: b.startOtp || b.customerOtp || "1234",
+      additionalCost: Number(b.additionalCost || 0.0),
+      additionalCostReason: b.additionalCostReason || "",
+      isAdditionalCostApproved: Boolean(b.isAdditionalCostApproved),
       expiresAfterSeconds: b.expiresAfterSeconds || 60,
       expiresInSeconds: b.expiresInSeconds || 60,
       customer: customerObj,
@@ -518,6 +521,7 @@ export class JobsService {
       data: {
         additionalCost: dto.additionalCost,
         additionalCostReason: dto.reason || job.additionalCostReason,
+        isAdditionalCostApproved: false,
         status: newStatus,
       },
       include: {

@@ -167,6 +167,7 @@ model Booking {
   customerSignature    String?
   additionalCost       Float         @default(0.0)
   additionalCostReason String?
+  isAdditionalCostApproved Boolean   @default(false)
   checklist            Json?
   materials            Json?
   declinedReason       String?

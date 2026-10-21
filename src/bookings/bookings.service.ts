@@ -199,11 +199,13 @@ export class BookingsService {
       data: dto.approved
         ? {
             status: BookingStatus.IN_PROGRESS,
+            isAdditionalCostApproved: true,
           }
         : {
             status: BookingStatus.IN_PROGRESS,
             additionalCost: 0.0,
             additionalCostReason: "Declined by customer",
+            isAdditionalCostApproved: false,
           },
       include: {
         worker: true,
