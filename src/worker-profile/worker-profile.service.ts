@@ -166,7 +166,7 @@ export class WorkerProfileService {
       });
     }
 
-    return updatedWorker;
+    return { ...updatedWorker, skills: dto.skills, success: true };
   }
 
   async updateAvatar(userId: string, avatarUrl: string) {
