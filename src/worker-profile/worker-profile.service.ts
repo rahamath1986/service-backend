@@ -101,8 +101,19 @@ export class WorkerProfileService {
           ? "PENDING"
           : "NOT_SUBMITTED";
 
+    const profParts = (worker.profession || "")
+      .split(/[,/|•]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const primaryCategory = profParts[0] || "Electrician";
+    const additionalCategories = profParts.slice(1);
+
     return {
       ...worker,
+      primaryCategory,
+      additionalCategories,
+      categories: profParts,
+      bio: worker.about,
       email: user?.email,
       address: user?.address,
       completedJobsCount,
@@ -113,15 +124,26 @@ export class WorkerProfileService {
   async updateProfile(userId: string, dto: UpdateWorkerProfileDto) {
     const worker = await this.getOrCreateWorkerByUserId(userId);
 
+    const categoriesList = dto.categories || 
+      (dto.primaryCategory 
+        ? [dto.primaryCategory, ...(dto.additionalCategories || [])]
+        : undefined);
+
+    let resolvedProfession = dto.profession;
+    if (!resolvedProfession && categoriesList && categoriesList.length > 0) {
+      resolvedProfession = categoriesList.join(", ");
+    }
+    const resolvedAbout = dto.about ?? dto.bio;
+
     const updatedWorker = await this.prisma.worker.update({
       where: { id: worker.id },
       data: {
         name: dto.name ?? undefined,
         phone: dto.phone ?? undefined,
-        profession: dto.profession ?? undefined,
+        profession: resolvedProfession ?? undefined,
         experienceYears: dto.experienceYears ?? undefined,
         hourlyRate: dto.hourlyRate ?? undefined,
-        about: dto.about ?? undefined,
+        about: resolvedAbout ?? undefined,
         bankName: dto.bankName ?? undefined,
         accountNumber: dto.accountNumber ?? undefined,
         ifscCode: dto.ifscCode ?? undefined,

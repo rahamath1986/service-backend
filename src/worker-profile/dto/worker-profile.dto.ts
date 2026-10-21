@@ -20,6 +20,27 @@ export class UpdateWorkerProfileDto {
   profession?: string;
 
   @IsOptional()
+  @IsString()
+  primaryCategory?: string;
+
+  @IsOptional()
+  @IsArray()
+  additionalCategories?: string[];
+
+  @IsOptional()
+  @IsArray()
+  categories?: string[];
+
+  @IsOptional()
+  @IsArray()
+  skills?: string[];
+
+  @IsOptional()
+  @IsString()
+  bio?: string;
+
+
+  @IsOptional()
   @IsNumber()
   experienceYears?: number;
 
