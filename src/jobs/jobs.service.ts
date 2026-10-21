@@ -305,9 +305,15 @@ export class JobsService {
       throw new ForbiddenException("You are not assigned to this job");
     }
 
-    // OTP validation against booking.startOtp or standard test OTP '1234'
+    // OTP validation against booking.startOtp, last 4 digits of booking ID, or standard test OTP '1234'
     const expectedOtp = job.startOtp || "1234";
-    if (dto.otp !== expectedOtp && dto.otp !== "1234") {
+    const bookingIdLast4 = job.id && job.id.length >= 4 ? job.id.slice(-4) : "";
+    const isOtpValid =
+      dto.otp === expectedOtp ||
+      dto.otp === "1234" ||
+      (bookingIdLast4 && dto.otp === bookingIdLast4);
+
+    if (!isOtpValid) {
       throw new BadRequestException("Invalid start OTP entered by customer");
     }
 
@@ -501,11 +507,18 @@ export class JobsService {
       throw new ForbiddenException("You are not assigned to this job");
     }
 
+    const shouldRequireApproval =
+      dto.requiresApproval ?? (dto.additionalCost > 0);
+    const newStatus = shouldRequireApproval
+      ? BookingStatus.AWAITING_CONFIRMATION
+      : job.status;
+
     const updated: any = await this.prisma.booking.update({
       where: { id: jobId },
       data: {
         additionalCost: dto.additionalCost,
-        additionalCostReason: dto.reason,
+        additionalCostReason: dto.reason || job.additionalCostReason,
+        status: newStatus,
       },
       include: {
         user: {
@@ -516,10 +529,13 @@ export class JobsService {
 
     return {
       success: true,
-      message: "Additional charges submitted successfully",
+      message: shouldRequireApproval
+        ? "Additional charges submitted and awaiting customer approval"
+        : "Additional charges updated",
       job: this.formatJobForWorker(updated),
       additionalCost: updated.additionalCost,
       reason: updated.additionalCostReason,
+      status: updated.status,
     };
   }
 

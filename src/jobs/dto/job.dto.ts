@@ -71,6 +71,10 @@ export class AdditionalCostDto {
   @IsOptional()
   @IsString()
   reason?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  requiresApproval?: boolean;
 }
 
 export class CompleteJobDto {

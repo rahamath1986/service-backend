@@ -14,6 +14,7 @@ import {
   CreateBookingDto,
   UpdateBookingStatusDto,
   PayBookingDto,
+  ConfirmAdditionalCostDto,
 } from "./dto/booking.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
@@ -53,4 +54,25 @@ export class BookingsController {
   async markAsPaid(@Param("id") id: string, @Body() dto: PayBookingDto) {
     return this.bookingsService.markAsPaid(id, dto);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(":id/confirm-additional-cost")
+  async confirmAdditionalCostPost(
+    @Request() req: any,
+    @Param("id") id: string,
+    @Body() dto: ConfirmAdditionalCostDto,
+  ) {
+    return this.bookingsService.confirmAdditionalCost(id, req.user.userId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(":id/confirm-additional-cost")
+  async confirmAdditionalCostPatch(
+    @Request() req: any,
+    @Param("id") id: string,
+    @Body() dto: ConfirmAdditionalCostDto,
+  ) {
+    return this.bookingsService.confirmAdditionalCost(id, req.user.userId, dto);
+  }
 }
+

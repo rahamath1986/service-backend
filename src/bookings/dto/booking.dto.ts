@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateBookingDto {
   @IsString()
@@ -45,3 +45,9 @@ export class PayBookingDto {
   @IsNotEmpty()
   paymentMethod: string;
 }
+
+export class ConfirmAdditionalCostDto {
+  @IsBoolean()
+  approved: boolean;
+}
+

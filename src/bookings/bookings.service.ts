@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, ForbiddenException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   CreateBookingDto,
   UpdateBookingStatusDto,
   PayBookingDto,
+  ConfirmAdditionalCostDto,
 } from "./dto/booking.dto";
 import { BookingStatus as BookingStatusEnum } from "../common/enums/booking-status.enum";
 const BookingStatus: any = BookingStatusEnum;
@@ -20,8 +21,11 @@ export class BookingsService {
   async getBookings(userId: string, status?: string) {
     const where: any = { userId };
     if (status) {
-      const upperStatus = status.toUpperCase() as BookingStatus;
-      if (Object.values(BookingStatus).includes(upperStatus)) {
+      let upperStatus = status.trim().toUpperCase();
+      if (upperStatus === "INPROGRESS" || status === "inProgress") {
+        upperStatus = "IN_PROGRESS";
+      }
+      if (Object.values(BookingStatus).includes(upperStatus as BookingStatus)) {
         where.status = upperStatus;
       }
     }
@@ -137,10 +141,15 @@ export class BookingsService {
       throw new NotFoundException(`Booking with ID ${id} not found`);
     }
 
+    let normalizedStatus = (String(dto.status || "")).trim().toUpperCase();
+    if (normalizedStatus === "INPROGRESS") {
+      normalizedStatus = "IN_PROGRESS";
+    }
+
     return this.prisma.booking.update({
       where: { id },
       data: {
-        status: dto.status as BookingStatus,
+        status: normalizedStatus as BookingStatus,
       },
       include: {
         worker: true,
@@ -164,5 +173,50 @@ export class BookingsService {
         worker: true,
       },
     } as any);
+  }
+
+  async confirmAdditionalCost(
+    id: string,
+    userId: string,
+    dto: ConfirmAdditionalCostDto,
+  ) {
+    const booking: any = await this.prisma.booking.findUnique({
+      where: { id },
+      include: { worker: true, user: true },
+    });
+    if (!booking) {
+      throw new NotFoundException(`Booking with ID ${id} not found`);
+    }
+
+    if (booking.userId !== userId) {
+      throw new ForbiddenException(
+        "Only the customer of this booking can confirm or decline additional charges",
+      );
+    }
+
+    const updated: any = await this.prisma.booking.update({
+      where: { id },
+      data: dto.approved
+        ? {
+            status: BookingStatus.IN_PROGRESS,
+          }
+        : {
+            status: BookingStatus.IN_PROGRESS,
+            additionalCost: 0.0,
+            additionalCostReason: "Declined by customer",
+          },
+      include: {
+        worker: true,
+        user: true,
+      },
+    } as any);
+
+    return {
+      success: true,
+      message: dto.approved
+        ? "Additional charges approved. Technician can proceed."
+        : "Additional charges declined.",
+      booking: updated,
+    };
   }
 }
