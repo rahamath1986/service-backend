@@ -83,8 +83,20 @@ export class CompleteJobDto {
   afterPhotos?: string[];
 
   @IsOptional()
+  @IsArray()
+  after_photos?: string[];
+
+  @IsOptional()
   @IsString()
   customerSignature?: string;
+
+  @IsOptional()
+  @IsString()
+  customer_signature?: string;
+
+  @IsOptional()
+  @IsString()
+  signature?: string;
 }
 
 export class ReportIssueDto {

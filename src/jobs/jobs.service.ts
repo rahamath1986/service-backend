@@ -649,13 +649,16 @@ export class JobsService {
     const commission = grossAmount * 0.15; // 15% platform commission
     const netWorkerEarnings = grossAmount - commission;
 
+    const signature = dto.customerSignature || dto.customer_signature || dto.signature;
+    const photos = dto.afterPhotos || dto.after_photos;
+
     const updated: any = await this.prisma.booking.update({
       where: { id: jobId },
       data: {
         status: BookingStatus.COMPLETED,
         amount: grossAmount,
-        afterPhotos: dto.afterPhotos ?? job.afterPhotos,
-        customerSignature: dto.customerSignature ?? job.customerSignature,
+        afterPhotos: photos ?? job.afterPhotos,
+        customerSignature: signature ?? job.customerSignature,
         isPaid: true,
       },
       include: {
@@ -688,6 +691,23 @@ export class JobsService {
         isCredit: true,
       },
     } as any);
+
+    try {
+      this.gateway.server.emit(`booking_${jobId}_status`, {
+        bookingId: jobId,
+        status: BookingStatus.COMPLETED,
+        afterPhotos: updated.afterPhotos,
+        customerSignature: updated.customerSignature,
+        amount: grossAmount,
+      });
+      this.gateway.server.emit(`user_${job.userId}_bookings`, {
+        type: "BOOKING_COMPLETED",
+        bookingId: jobId,
+        status: BookingStatus.COMPLETED,
+        afterPhotos: updated.afterPhotos,
+        customerSignature: updated.customerSignature,
+      });
+    } catch (_) {}
 
     return {
       success: true,
