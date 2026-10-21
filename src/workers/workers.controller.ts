@@ -8,9 +8,14 @@ export class WorkersController {
   @Get()
   async getWorkers(
     @Query("serviceName") serviceName?: string,
+    @Query("service") service?: string,
+    @Query("category") category?: string,
+    @Query("categoryName") categoryName?: string,
+    @Query("profession") profession?: string,
     @Query("filter") filter?: string,
   ) {
-    return this.workersService.getWorkers(serviceName, filter);
+    const resolved = serviceName || service || category || categoryName || profession;
+    return this.workersService.getWorkers(resolved, filter);
   }
 
   @Get(":id")
