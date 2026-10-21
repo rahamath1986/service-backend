@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { AppGateway } from "../gateway/app.gateway";
 import {
   RejectJobDto,
   StartJobDto,
@@ -20,7 +21,10 @@ type BookingStatus = any;
 
 @Injectable()
 export class JobsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gateway: AppGateway,
+  ) {}
 
   formatJobForWorker(b: any) {
     if (!b) return null;
@@ -233,6 +237,83 @@ export class JobsService {
       job: this.formatJobForWorker(updated),
     };
   }
+
+  async cancelJob(jobId: string, userId: string, dto?: RejectJobDto) {
+    const worker = await this.getWorkerByUserId(userId);
+    const job: any = await this.prisma.booking.findUnique({
+      where: { id: jobId },
+      include: { user: true },
+    });
+
+    if (!job) {
+      throw new NotFoundException(`Job with ID ${jobId} not found`);
+    }
+
+    if (job.workerId !== worker.id) {
+      throw new ForbiddenException("You are not assigned to this job");
+    }
+
+    if (job.status === BookingStatus.COMPLETED) {
+      throw new ForbiddenException("Completed jobs cannot be cancelled");
+    }
+
+    const cancelReason = dto?.reason || "Cancelled by technician";
+
+    if (job.isPaid && job.amount > 0) {
+      try {
+        await this.prisma.wallet.upsert({
+          where: { userId: job.userId },
+          update: { balance: { increment: job.amount } },
+          create: { userId: job.userId, balance: job.amount },
+        });
+
+        await this.prisma.walletTransaction.create({
+          data: {
+            wallet: { connect: { userId: job.userId } },
+            amount: job.amount,
+            type: "CREDIT",
+            description: `Refund for cancelled booking #${job.id}`,
+            referenceId: job.id,
+          } as any,
+        });
+      } catch (err) {
+        console.error("Cancellation refund error:", err);
+      }
+    }
+
+    const updated: any = await this.prisma.booking.update({
+      where: { id: jobId },
+      data: {
+        status: BookingStatus.CANCELLED,
+        declinedReason: cancelReason,
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, phone: true, avatar: true, address: true },
+        },
+      },
+    } as any);
+
+    try {
+      this.gateway.server.emit(`booking_${jobId}_status`, {
+        bookingId: jobId,
+        status: BookingStatus.CANCELLED,
+        reason: cancelReason,
+      });
+      this.gateway.server.emit(`user_${job.userId}_bookings`, {
+        type: "BOOKING_CANCELLED",
+        bookingId: jobId,
+        reason: cancelReason,
+      });
+    } catch (_) {}
+
+    return {
+      success: true,
+      message: "Job cancelled successfully",
+      job: this.formatJobForWorker(updated),
+    };
+  }
+
 
   async markEnRoute(jobId: string, userId: string) {
     const worker = await this.getWorkerByUserId(userId);

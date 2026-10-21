@@ -73,6 +73,18 @@ export class JobsController {
     return this.jobsService.rejectJob(id, req.user.userId, dto);
   }
 
+  @ApiOperation({ summary: "Cancel active job with reason" })
+  @Post(":id/cancel")
+  @HttpCode(HttpStatus.OK)
+  async cancelJob(
+    @Request() req: any,
+    @Param("id") id: string,
+    @Body() dto: RejectJobDto,
+  ) {
+    return this.jobsService.cancelJob(id, req.user.userId, dto);
+  }
+
+
   @ApiOperation({ summary: "Update job status to EN_ROUTE" })
   @Post(":id/en-route")
   @HttpCode(HttpStatus.OK)

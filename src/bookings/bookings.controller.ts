@@ -15,6 +15,7 @@ import {
   UpdateBookingStatusDto,
   PayBookingDto,
   ConfirmAdditionalCostDto,
+  CancelBookingDto,
 } from "./dto/booking.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
@@ -74,5 +75,24 @@ export class BookingsController {
   ) {
     return this.bookingsService.confirmAdditionalCost(id, req.user.userId, dto);
   }
-}
 
+  @UseGuards(JwtAuthGuard)
+  @Post(":id/cancel")
+  async cancelBookingPost(
+    @Request() req: any,
+    @Param("id") id: string,
+    @Body() dto: CancelBookingDto,
+  ) {
+    return this.bookingsService.cancelBooking(id, req.user.userId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(":id/cancel")
+  async cancelBookingPatch(
+    @Request() req: any,
+    @Param("id") id: string,
+    @Body() dto: CancelBookingDto,
+  ) {
+    return this.bookingsService.cancelBooking(id, req.user.userId, dto);
+  }
+}

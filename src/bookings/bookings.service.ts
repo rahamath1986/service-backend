@@ -5,6 +5,7 @@ import {
   UpdateBookingStatusDto,
   PayBookingDto,
   ConfirmAdditionalCostDto,
+  CancelBookingDto,
 } from "./dto/booking.dto";
 import { BookingStatus as BookingStatusEnum } from "../common/enums/booking-status.enum";
 const BookingStatus: any = BookingStatusEnum;
@@ -218,6 +219,90 @@ export class BookingsService {
       message: dto.approved
         ? "Additional charges approved. Technician can proceed."
         : "Additional charges declined.",
+      booking: updated,
+    };
+  }
+
+  async cancelBooking(id: string, userId: string, dto?: CancelBookingDto) {
+    const booking: any = await this.prisma.booking.findUnique({
+      where: { id },
+      include: { worker: true, user: true },
+    });
+    if (!booking) {
+      throw new NotFoundException(`Booking with ID ${id} not found`);
+    }
+
+    if (
+      booking.userId !== userId &&
+      booking.worker?.userId !== userId &&
+      booking.workerId !== userId
+    ) {
+      throw new ForbiddenException("You are not authorized to cancel this booking");
+    }
+
+    if (booking.status === BookingStatus.COMPLETED) {
+      throw new ForbiddenException("Completed bookings cannot be cancelled");
+    }
+
+    if (booking.status === BookingStatus.CANCELLED) {
+      return {
+        success: true,
+        message: "Booking is already cancelled",
+        booking,
+      };
+    }
+
+    const cancelReason = dto?.reason || "Cancelled by customer";
+
+    if (booking.isPaid && booking.amount > 0) {
+      try {
+        await this.prisma.wallet.upsert({
+          where: { userId: booking.userId },
+          update: { balance: { increment: booking.amount } },
+          create: { userId: booking.userId, balance: booking.amount },
+        });
+
+        await this.prisma.walletTransaction.create({
+          data: {
+            wallet: { connect: { userId: booking.userId } },
+            amount: booking.amount,
+            type: "CREDIT",
+            description: `Refund for cancelled booking #${booking.id}`,
+            referenceId: booking.id,
+          } as any,
+        });
+      } catch (err) {
+        console.error("Cancellation refund error:", err);
+      }
+    }
+
+    const updated: any = await this.prisma.booking.update({
+      where: { id },
+      data: {
+        status: BookingStatus.CANCELLED,
+        declinedReason: cancelReason,
+      },
+      include: {
+        worker: true,
+        user: true,
+      },
+    } as any);
+
+    try {
+      this.gateway.server.emit(`booking_${id}_status`, {
+        bookingId: id,
+        status: BookingStatus.CANCELLED,
+        reason: cancelReason,
+      });
+      this.gateway.server.emit(`worker_${booking.workerId}_jobs`, {
+        type: "JOB_CANCELLED",
+        bookingId: id,
+      });
+    } catch (_) {}
+
+    return {
+      success: true,
+      message: "Booking cancelled successfully",
       booking: updated,
     };
   }

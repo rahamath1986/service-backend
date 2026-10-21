@@ -51,3 +51,9 @@ export class ConfirmAdditionalCostDto {
   approved: boolean;
 }
 
+
+export class CancelBookingDto {
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
