@@ -11,11 +11,15 @@ export class EarningsController {
   constructor(private readonly earningsService: EarningsService) {}
 
   @ApiOperation({
-    summary: "Get worker earnings summary (gross, commission, net, job counts)",
+    summary: "Get worker earnings summary (gross, commission, net, job counts) filtered by period and date",
   })
   @Get("summary")
-  async getSummary(@Request() req: any) {
-    return this.earningsService.getSummary(req.user.userId);
+  async getSummary(
+    @Request() req: any,
+    @Query("period") period?: string,
+    @Query("date") dateStr?: string,
+  ) {
+    return this.earningsService.getSummary(req.user.userId, period, dateStr);
   }
 
   @ApiOperation({
