@@ -8,6 +8,7 @@ import { NestExpressApplication } from "@nestjs/platform-express";
 import { json, urlencoded } from "express";
 import { join } from "path";
 import { existsSync, mkdirSync } from "fs";
+import { createProxyMiddleware, fixRequestBody } from "http-proxy-middleware";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -15,9 +16,38 @@ async function bootstrap() {
   app.use(json({ limit: "50mb" }));
   app.use(urlencoded({ extended: true, limit: "50mb" }));
 
+  // --- REVERSE PROXY FOR TURF SERVICE ---
+  const turfTargetUrl =
+    process.env.TURF_SERVICE_URL ||
+    "https://turf-api.gentlerock-8d88694a.centralindia.azurecontainerapps.io";
+
+  app.use(
+    "/turf",
+    createProxyMiddleware({
+      target: turfTargetUrl,
+      changeOrigin: true,
+      pathRewrite: {
+        "^/turf": "", // Strips '/turf' before forwarding to turf-api
+      },
+      on: {
+        proxyReq: fixRequestBody,
+      },
+    }),
+  );
+
   const apiPrefix = process.env.API_PREFIX || "api/v1";
   app.setGlobalPrefix(apiPrefix, {
-    exclude: ["health", "docs", "docs/(.*)", "uploads", "uploads/(.*)", ""],
+    // Exclude 'turf' and its subpaths from ServiGo's global prefix
+    exclude: [
+      "health",
+      "docs",
+      "docs/(.*)",
+      "uploads",
+      "uploads/(.*)",
+      "turf",
+      "turf/(.*)",
+      "",
+    ],
   });
 
   app.enableCors({
@@ -61,6 +91,7 @@ async function bootstrap() {
   console.log(
     `🚀 ServiGo Backend running on: http://0.0.0.0:${port}/${apiPrefix}`,
   );
+  console.log(`⚽ Turf Proxy mapped from /turf to: ${turfTargetUrl}`);
   console.log(`📚 Swagger Documentation: http://0.0.0.0:${port}/docs`);
 }
 
