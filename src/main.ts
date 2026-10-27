@@ -21,6 +21,21 @@ async function bootstrap() {
     process.env.TURF_SERVICE_URL ||
     "https://turf-api.gentlerock-8d88694a.centralindia.azurecontainerapps.io";
 
+  // Redirect /turf/docs -> /turf/api/docs
+  app.use("/turf/docs", (req, res) => res.redirect("/turf/api/docs"));
+
+  // Proxy Swagger UI static assets & specs for Turf
+  app.use(
+    "/api/docs",
+    createProxyMiddleware({
+      target: turfTargetUrl,
+      changeOrigin: true,
+      on: {
+        proxyReq: fixRequestBody,
+      },
+    }),
+  );
+
   app.use(
     "/turf",
     createProxyMiddleware({
@@ -37,11 +52,19 @@ async function bootstrap() {
 
   const apiPrefix = process.env.API_PREFIX || "api/v1";
   app.setGlobalPrefix(apiPrefix, {
-    // Exclude 'turf' and its subpaths from ServiGo's global prefix
+    // Exclude docs, swagger, uploads, and turf from global prefix to avoid 404s
     exclude: [
       "health",
       "docs",
       "docs/(.*)",
+      "docs-json",
+      "docs-yaml",
+      "swagger",
+      "swagger/(.*)",
+      "api-docs",
+      "api-docs/(.*)",
+      "api/docs",
+      "api/docs/(.*)",
       "uploads",
       "uploads/(.*)",
       "turf",
@@ -75,15 +98,33 @@ async function bootstrap() {
     }),
   );
 
+  // Swagger Documentation Setup for ServiGo
   const swaggerConfig = new DocumentBuilder()
     .setTitle("ServiGo API & Worker Platform")
     .setDescription("ServiGo On-Demand Home Services & Worker App API")
     .setVersion("1.1")
     .addBearerAuth()
+    .addServer(
+      "https://app-service-api-c3hwa9dpeggseyb5.centralindia-01.azurewebsites.net",
+      "Production Azure Web App",
+    )
+    .addServer("/", "Current Host (Relative)")
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup("docs", app, document);
+  SwaggerModule.setup("docs", app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      docExpansion: "none",
+    },
+    customSiteTitle: "ServiGo API Documentation",
+  });
+
+  // Swagger URL aliases to prevent 404 on common typos
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get("/swagger", (req: any, res: any) => res.redirect("/docs"));
+  httpAdapter.get("/api-docs", (req: any, res: any) => res.redirect("/docs"));
 
   const port = process.env.PORT || 8080;
 
