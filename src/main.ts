@@ -50,9 +50,31 @@ async function bootstrap() {
     }),
   );
 
+  // --- REVERSE PROXY FOR AUTOMOBILE SERVICE ---
+  const automobileTargetUrl =
+    process.env.AUTOMOBILE_SERVICE_URL ||
+    "https://motosaas-api.gentlerock-8d88694a.centralindia.azurecontainerapps.io";
+
+  // Redirect /automobile/docs -> /automobile/api/docs
+  app.use("/automobile/docs", (req, res) => res.redirect("/automobile/api/docs"));
+
+  app.use(
+    "/automobile",
+    createProxyMiddleware({
+      target: automobileTargetUrl,
+      changeOrigin: true,
+      pathRewrite: {
+        "^/automobile": "", // Strips '/automobile' before forwarding to automobile-api
+      },
+      on: {
+        proxyReq: fixRequestBody,
+      },
+    }),
+  );
+
   const apiPrefix = process.env.API_PREFIX || "api/v1";
   app.setGlobalPrefix(apiPrefix, {
-    // Exclude docs, swagger, uploads, and turf from global prefix to avoid 404s
+    // Exclude docs, swagger, uploads, turf, and automobile from global prefix to avoid 404s
     exclude: [
       "health",
       "docs",
@@ -69,6 +91,8 @@ async function bootstrap() {
       "uploads/(.*)",
       "turf",
       "turf/(.*)",
+      "automobile",
+      "automobile/(.*)",
       "",
     ],
   });
@@ -133,6 +157,7 @@ async function bootstrap() {
     `🚀 ServiGo Backend running on: http://0.0.0.0:${port}/${apiPrefix}`,
   );
   console.log(`⚽ Turf Proxy mapped from /turf to: ${turfTargetUrl}`);
+  console.log(`🚗 Automobile Proxy mapped from /automobile to: ${automobileTargetUrl}`);
   console.log(`📚 Swagger Documentation: http://0.0.0.0:${port}/docs`);
 }
 
